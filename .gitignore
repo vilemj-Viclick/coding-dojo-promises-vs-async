@@ -1,0 +1,7 @@
+.idea/*
+!.idea/codeStyleSettings.xml
+!.idea/typescript-compiler.xml
+!.idea/inspectionProfiles
+!.idea/jsLibraryMappings.xml
+!.idea/misc.xml
+node_modules/
