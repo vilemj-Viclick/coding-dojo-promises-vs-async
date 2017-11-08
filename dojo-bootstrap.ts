@@ -41,10 +41,12 @@ export class Promise<T, K=any> {
 
     return actualPromise;
   }
+
+  then = RsvpPromise.prototype.then;
 }
 
 
-export function executeTask(key: string, ms: number, fail?: boolean) {
+export function executeTask(key: string, ms: number, fail?: boolean): Promise<void> {
   return new Promise<void>(key, (resolve, reject) => {
     setTimeout(() => {
       (fail ? reject : resolve)(undefined);
