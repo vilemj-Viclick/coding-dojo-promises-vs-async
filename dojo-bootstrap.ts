@@ -10,26 +10,6 @@ const eventHistory: HistoryEvent[] = [];
 const promises: Promise<void>[] = [];
 const consoleWidth = 80;
 
-export function executeTask(key: string, ms: number, fail?: boolean) {
-  eventHistory.push({
-    key,
-    eventType: 'start',
-    time: Date.now(),
-  });
-  const result = new RsvpPromise<void>((resolve, reject) => {
-    setTimeout(() => {
-      eventHistory.push({
-        key,
-        eventType: fail ? 'fail' : 'end',
-        time: Date.now(),
-      });
-      (fail ? reject : resolve)();
-    }, ms);
-  });
-
-  promises.push(result.then(() => null, () => null));
-  return result;
-}
 
 export class Promise<T, K=any> {
   public static all = RsvpPromise.all;
@@ -56,12 +36,22 @@ export class Promise<T, K=any> {
           eventType: 'fail',
           time: Date.now(),
         });
-      }
+      },
     ));
 
     return actualPromise;
   }
 }
+
+
+export function executeTask(key: string, ms: number, fail?: boolean) {
+  return new Promise<void>(key, (resolve, reject) => {
+    setTimeout(() => {
+      (fail ? reject : resolve)(undefined);
+    }, ms);
+  });
+}
+
 
 function findLongestKey(events: HistoryEvent[]) {
   return events.reduce((longestLength, nextEvent) => {
@@ -129,11 +119,11 @@ function finish() {
           startEvent,
           translatedEventHistory.find(event => (event.eventType !== 'start') && (event.key === startEvent.key)),
           timeQuantum,
-          longestNameLength
-        )
+          longestNameLength,
+        ),
     );
     //console.log({longestNameLength, maxTime, minTime, timeScale, timeQuantum, translatedEventHistory});
-  }, 1000)
+  }, 1000);
 }
 
 
