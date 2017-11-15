@@ -12,6 +12,9 @@
 		"allowJs": false,
 		"forceConsistentCasingInFileNames": true,
 		"jsx": "react",
+		"types": [
+			"node"
+		],
 		"lib": [
 			"dom",
 			"scripthost",

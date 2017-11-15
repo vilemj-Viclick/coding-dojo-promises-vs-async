@@ -1,4 +1,3 @@
-import { Promise as RsvpPromise } from 'rsvp';
 import * as assign from 'object-assign';
 
 type HistoryEvent = {
@@ -10,54 +9,97 @@ const eventHistory: HistoryEvent[] = [];
 const promises: Promise<void>[] = [];
 const consoleWidth = 80;
 
+const oldPromise = global.Promise as any;
 
-export class Promise<T, K=any> {
-  public static all = RsvpPromise.all;
+function shouldIgnorePromise(stack: string, name: string, key: string) {
+  if (name) {
+    return false;
+  }
+  return !!key.match(/^step$/);
 
-  constructor(name: string, executor: (resolve: (arg: T) => void, reject: (arg: K) => void) => void) {
-    const actualPromise = new RsvpPromise((a, b) => {
-      eventHistory.push({
-        key: name,
-        eventType: 'start',
-        time: Date.now(),
-      });
-      executor(a, b);
+}
+
+function extractFunctionName(stackTraceLine: string): string | undefined {
+  const nameMatch = stackTraceLine.match(/at.* ([a-z][a-z0-9]*) \(/i);
+  if (nameMatch) {
+    return nameMatch[1];
+  }
+
+  return undefined;
+}
+
+const commonFunctionNames = [
+  'myPromiseConstructor',
+  '__awaiter',
+];
+
+function isAcceptableFunctionName(functionName: string) {
+  return !commonFunctionNames.includes(functionName);
+}
+
+function extractPromiseName(stack: string) {
+  return stack.split('\n').map(extractFunctionName).filter(x => !!x).filter(isAcceptableFunctionName)[0];
+}
+
+function myPromiseConstructor(executor, name) {
+  const stack = (new Error()).stack as string;
+  // console.log(stack);
+  const key = name || extractPromiseName(stack);
+  if (shouldIgnorePromise(stack, name, key)) {
+    return new oldPromise(executor);
+  }
+
+
+  const newPromise = new oldPromise((resolve, reject) => {
+    eventHistory.push({
+      key,
+      eventType: 'start',
+      time: Date.now(),
     });
-    promises.push(actualPromise.then(
-      () => {
+    executor(
+      (...args) => {
         eventHistory.push({
-          key: name,
+          key,
           eventType: 'end',
           time: Date.now(),
         });
-      }, () => {
+        resolve(...args);
+      }
+      ,
+      (...args) => {
         eventHistory.push({
-          key: name,
+          key,
           eventType: 'fail',
           time: Date.now(),
         });
-      },
-    ));
-
-    return actualPromise;
-  }
-
-  then = RsvpPromise.prototype.then;
+        reject(...args);
+      });
+  });
+  promises.push(newPromise);
+  return newPromise;
 }
 
+global.Promise = myPromiseConstructor;
+
+export function createPromise<T>(key: string, executor: (resolve: (arg: T) => void, reject: (reason: any) => void) => void) {
+  return new (Promise as any)(executor, key);
+}
 
 export function executeTask(key: string, ms: number, fail?: boolean): Promise<void> {
-  return new Promise<void>(key, (resolve, reject) => {
-    setTimeout(() => {
-      (fail ? reject : resolve)(undefined);
-    }, ms);
-  });
+  return new (Promise as any)(
+    (resolve, reject) => {
+      setTimeout(() => {
+        (fail ? reject : resolve)(undefined);
+      }, ms);
+    },
+    key,
+  );
 }
 
 
 function findLongestKey(events: HistoryEvent[]) {
   return events.reduce((longestLength, nextEvent) => {
-    return longestLength > nextEvent.key.length ? longestLength : nextEvent.key.length;
+    return longestLength > (nextEvent.key || 'undefined').length ? longestLength : (nextEvent.key || 'undefined').length;
   }, 0);
 }
 
@@ -93,15 +135,15 @@ function renderRun(startEvent: HistoryEvent, finishEvent: HistoryEvent | undefin
     return '...';
   }
   const padNumber = Math.floor((finishEvent.time - startEvent.time) / timeQuantum);
+  // console.log(startEvent, finishEvent, timeQuantum, padNumber);
   if (padNumber <= 0) {
     return finishEvent.eventType === 'end' ? '|' : 'X';
   }
-  //console.log(startEvent, finishEvent, timeQuantum, padNumber);
   return `|${pad('', padNumber - 1, '-')}${finishEvent.eventType === 'end' ? '|' : 'X'}`;
 }
 
 function renderPromiseTime(startEvent: HistoryEvent, finishEvent: HistoryEvent | undefined, timeQuantum: number, maxNameLength: number) {
-  console.log(`${pad(startEvent.key, maxNameLength)}:${renderStart(startEvent, timeQuantum)}${renderRun(startEvent, finishEvent, timeQuantum)}`);
+  console.log(`${pad((startEvent.key || 'undefined'), maxNameLength)}:${renderStart(startEvent, timeQuantum)}${renderRun(startEvent, finishEvent, timeQuantum)}`);
 }
 
 function finish() {
@@ -124,7 +166,14 @@ function finish() {
           longestNameLength,
         ),
     );
-    //console.log({longestNameLength, maxTime, minTime, timeScale, timeQuantum, translatedEventHistory});
+    // console.log({
+    //   longestNameLength,
+    //   maxTime,
+    //   minTime,
+    //   timeScale,
+    //   timeQuantum,
+    //   translatedEventHistory,
+    // });
   }, 1000);
 }
 
