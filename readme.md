@@ -8,6 +8,7 @@ This is supporting code for a coding dojo on the subject of promises and the par
 	- Set the PATH variable so that `npm` and `node` commands work.
 	- All was developed with node@8.4.0 and npm@5.3.0. All will certainly work with these versions, however the author is not aware of any issues that should transpire with any earlier versions.
 1. Clone the repository (obviously...)
+	- Or download the repo as a ZIP and extract it.
 1. Open your favorite command-line in the repository
 1. Run these commands: 
 	```
