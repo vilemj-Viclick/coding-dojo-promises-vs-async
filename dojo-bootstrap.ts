@@ -15,7 +15,7 @@ function shouldIgnorePromise(stack: string, name: string, key: string) {
   if (name) {
     return false;
   }
-  return !!key.match(/^step$/);
+  return !!key.match(/^(step|Promise)$/);
 
 }
 
