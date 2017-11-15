@@ -4,6 +4,7 @@ import {
 } from './dojo-bootstrap';
 
 /*
+ * Rewrite the code into a *.solution.ts using async/await.
  * Do not use Promise.all in the solution!!!
  */
 
