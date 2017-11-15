@@ -4,14 +4,19 @@ import {
 
 async function subFunction() {
   await executeTask('subFunctionTask1', 50);
-  await executeTask('subFunctionTask2', 50);
+  await executeTask('subFunctionTask2', 100);
 }
 
 async function run() {
-  await executeTask('lll', 100);
-  subFunction();
-  await executeTask('task3', 30);
-  return 'run';
+  try {
+    const task = executeTask('task', 100, true);
+    const subTask = subFunction();
+
+    await Promise.all([task, subTask, executeTask('task3', 30)]);
+  }
+  catch (error) {
+    await executeTask('Error', 10);
+  }
 }
 
 run();

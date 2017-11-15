@@ -80,6 +80,7 @@ function myPromiseConstructor(executor, name) {
 }
 
 global.Promise = myPromiseConstructor;
+Object.setPrototypeOf(global.Promise, oldPromise);
 
 export function createPromise<T>(key: string, executor: (resolve: (arg: T) => void, reject: (reason: any) => void) => void) {
   return new (Promise as any)(executor, key);
