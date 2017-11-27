@@ -11,6 +11,10 @@ const consoleWidth = 80;
 
 const oldPromise = global.Promise as any;
 
+export function prettyPrint(something: any) {
+  console.log(JSON.stringify(something, null, 2));
+}
+
 function shouldIgnorePromise(stack: string, name: string, key: string) {
   if (name) {
     return false;
@@ -20,7 +24,7 @@ function shouldIgnorePromise(stack: string, name: string, key: string) {
 }
 
 function extractFunctionName(stackTraceLine: string): string | undefined {
-  const nameMatch = stackTraceLine.match(/at.* ([a-z][a-z0-9]*) \(/i);
+  const nameMatch = stackTraceLine.match(/at.* ([a-z][.a-z0-9]*) (\[.*\] )?\(/i);
   if (nameMatch) {
     return nameMatch[1];
   }
@@ -31,6 +35,10 @@ function extractFunctionName(stackTraceLine: string): string | undefined {
 const commonFunctionNames = [
   'myPromiseConstructor',
   '__awaiter',
+  'Function.all',
+  'Function.resolve',
+  'Function.reject',
+  'Object.waitForAll',
 ];
 
 function isAcceptableFunctionName(functionName: string) {
@@ -57,22 +65,22 @@ function myPromiseConstructor(executor, name) {
       time: Date.now(),
     });
     executor(
-      (...args) => {
+      (arg) => {
         eventHistory.push({
           key,
           eventType: 'end',
           time: Date.now(),
         });
-        resolve(...args);
+        resolve(arg || key);
       }
       ,
-      (...args) => {
+      (arg) => {
         eventHistory.push({
           key,
           eventType: 'fail',
           time: Date.now(),
         });
-        reject(...args);
+        reject(arg || key);
       });
   });
   promises.push(newPromise);
@@ -86,15 +94,47 @@ export function createPromise<T>(key: string, executor: (resolve: (arg: T) => vo
   return new (Promise as any)(executor, key);
 }
 
-export function executeTask(key: string, ms: number, fail?: boolean): Promise<void> {
+export function executeTask(key: string, ms: number, fail?: string): Promise<void> {
   return new (Promise as any)(
     (resolve, reject) => {
       setTimeout(() => {
-        (fail ? reject : resolve)(undefined);
+        if (fail) {
+          reject(fail);
+        }
+        resolve(key);
       }, ms);
     },
     key,
   );
+}
+
+interface PromiseWaitResults {
+  values: any[];
+  errors: any[];
+}
+
+const waitForPromise = (results) => (promise: Promise<void>, index: number) => {
+  return promise.then(result => {
+    results.values[index] = result;
+  })
+    .catch(error => {
+      results.errors[index] = error;
+    });
+};
+
+export function waitForAll(promises: Promise<void>[]) {
+  const results: PromiseWaitResults = {
+    values: [],
+    errors: [],
+  };
+  return Promise.all(promises.map(waitForPromise(results)))
+    .then(() => {
+      if (results.errors.length > 0) {
+        throw results;
+      }
+
+      return results;
+    });
 }
 
 
