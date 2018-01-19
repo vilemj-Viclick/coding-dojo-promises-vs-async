@@ -4,15 +4,19 @@ import {
 } from './bootstrap';
 
 /*
- * Rewrite the code into a *.solution.ts using async/await.
- * Do not use Promise.all in the solution!!!
+ * Rewrite the code into a ex2.solution.ts using async/await.
  */
 
 createPromise<void>('run',
   resolve => {
-    Promise.all([
-      executeTask('task1', 20),
-      executeTask('task2', 10),
-      executeTask('task3', 30),
-    ]).then(() => resolve(undefined));
+    executeTask('task1', 20)
+      .then(
+        () => executeTask('task2', 10),
+      )
+      .then(
+        () => executeTask('task3', 30),
+      )
+      .then(
+        () => resolve(undefined),
+      );
   });
