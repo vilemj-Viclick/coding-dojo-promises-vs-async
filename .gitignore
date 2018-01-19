@@ -5,4 +5,4 @@
 !.idea/jsLibraryMappings.xml
 !.idea/misc.xml
 node_modules/
-*.solution.ts
+# *.solution.ts
