@@ -1,6 +1,6 @@
 import {
   executeTask,
-} from './dojo-bootstrap';
+} from './bootstrap';
 
 /*
  * This is an example solution of the ex1.ts assignment.

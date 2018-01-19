@@ -1,7 +1,7 @@
 import {
   createPromise,
   executeTask,
-} from './dojo-bootstrap';
+} from './bootstrap';
 
 
 /*

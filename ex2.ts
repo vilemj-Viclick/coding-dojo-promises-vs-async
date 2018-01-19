@@ -1,7 +1,7 @@
 import {
   createPromise,
   executeTask,
-} from './dojo-bootstrap';
+} from './bootstrap';
 
 /*
  * Rewrite the code into a *.solution.ts using async/await.
